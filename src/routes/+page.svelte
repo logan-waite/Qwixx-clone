@@ -5,7 +5,7 @@ import ScoreRow from '$lib/components/score-row.svelte';
 
 <h1 class="title">Qwix!</h1>
 <div class="dice-tray">
-    <Die></Die>
+    <Die value={1}></Die>
     <Die value={2}></Die>
     <Die value={3} color='red' pipColor="white"></Die>
     <Die value={4} color='yellow'></Die>
@@ -16,10 +16,10 @@ import ScoreRow from '$lib/components/score-row.svelte';
     <button>Roll</button>
 </div> -->
 <div class="scorecard">
-    <ScoreRow></ScoreRow>
-    <ScoreRow></ScoreRow>
-    <ScoreRow></ScoreRow>
-    <ScoreRow></ScoreRow>
+    <ScoreRow color="red"></ScoreRow>
+    <ScoreRow color="yellow"></ScoreRow>
+    <ScoreRow color="blue" ascOrder={false}></ScoreRow>
+    <ScoreRow color="green" ascOrder={false}></ScoreRow>
 </div>
 
 <style>
@@ -27,11 +27,12 @@ import ScoreRow from '$lib/components/score-row.svelte';
         display: flex;
         flex-direction: column;
         align-items: center;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
     }
     .dice-tray {
         box-sizing: border-box;
         border: 1px solid gray;
-        width: 512;
+        width: 512px;
         max-width: 100%;
         height: fit-content;
         min-height: 192px;
@@ -43,7 +44,8 @@ import ScoreRow from '$lib/components/score-row.svelte';
         flex-wrap: wrap;
     }
     .scorecard {
-
+        width: 512px;
+        margin-top: 10px;
     }
 </style>
 

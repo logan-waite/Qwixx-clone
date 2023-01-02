@@ -1,7 +1,8 @@
 <script lang='ts'>
+    import type {Colors} from '$lib/types'
     type Value = 1 | 2 | 3 | 4 | 5 | 6;
 
-    export let color = 'white';
+    export let color: Colors | 'white'  = 'white';
     export let pipColor = 'black';
     export let value: Value = 1
 
@@ -27,7 +28,7 @@
         padding: 7px;
         width: 60px;
         height: 60px;
-        border-radius: 10%;
+        border-radius: 7px;
         margin: 10px;
     }
 
