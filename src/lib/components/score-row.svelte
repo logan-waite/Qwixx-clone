@@ -10,35 +10,71 @@
 		.map((_, i) => (ascOrder ? i + 2 : 12 - i));
 </script>
 
-<div class={`score-row ${color}`}>
+<div class={`score-row score-row--${color}`}>
 	<!-- class={`score-row ${color}`} -->
 	{#each boxes as boxNumber}
-		<div class="score-row__box">
+		<div class={`score-row__box score-row__box--${color}`}>
 			{boxNumber}
 		</div>
 	{/each}
-	<div class="score-row__box">
-		<Icon icon="lock" />
+	<div class={`score-row__box score-row__box--${color}`}>
+		<Icon icon="unlock" />
 	</div>
 </div>
 
 <style>
 	.score-row {
-		border: 1px solid blue;
-		border-radius: 7px;
+		/* border-radius: 7px; */
 		display: flex;
 		justify-content: space-between;
-		margin: 5px;
+		margin-bottom: 10px;
+		padding: 7px;
 	}
 	.score-row__box {
-		height: 40px;
-		width: 40px;
-		text-align: center;
-		vertical-align: middle;
-		line-height: 40px;
+		box-sizing: border-box;
+		height: 50px;
+		width: 50px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 		font-size: 20pt;
+		margin: 2px;
+		border-radius: 5px;
 	}
-	.red {
+
+	/* red */
+	.score-row--red {
 		color: red;
+		background-color: red;
+	}
+	.score-row__box--red {
+		background-color: lightpink;
+	}
+
+	/* yellow */
+	.score-row--yellow {
+		color: gold;
+		background-color: gold;
+	}
+	.score-row__box--yellow {
+		background-color: lightyellow;
+	}
+
+	/* green */
+	.score-row--green {
+		color: green;
+		background-color: green;
+	}
+	.score-row__box--green {
+		background-color: lightgreen;
+	}
+
+	/* blue */
+	.score-row--blue {
+		color: blue;
+		background-color: blue;
+	}
+	.score-row__box--blue {
+		background-color: lightblue;
 	}
 </style>
