@@ -1,29 +1,29 @@
 <script lang="ts">
+	import '$lib/icon-library';
 	import Die from '$lib/components/die.svelte';
 	import ScoreRow from '$lib/components/score-row.svelte';
+	import { dice } from '$lib/stores/dice';
+	import { createArray } from '$lib/utils';
 </script>
 
 <svelte:head>
 	<title>Qwixx Clone</title>
 </svelte:head>
 
-<h1 class="title">Qwixx!</h1>
+<h1 class="title">Qwixx Clone!</h1>
 
 <main class="game-wrapper">
 	<div class="dice-tray">
-		<Die value={1} />
-		<Die value={2} />
-		<Die value={3} color="red" pipColor="white" />
-		<Die value={4} color="yellow" />
-		<Die value={5} color="green" pipColor="white" />
-		<Die value={6} color="blue" pipColor="white" />
+		{#each $dice as die}
+			<Die {...die} />
+		{/each}
 	</div>
 	<div class="actions">
-		<button class="roll-button">Roll Dice</button>
+		<button class="roll-button" on:click={dice.rollDice}>Roll Dice</button>
 		<div class="empty-rolls">
 			<h5>Scores Not Taken</h5>
 			<div class="empty-roll-marker__wrapper">
-				{#each Array(4).fill(0) as box}
+				{#each createArray(4) as box}
 					<div class="empty-roll-marker" />
 				{/each}
 			</div>

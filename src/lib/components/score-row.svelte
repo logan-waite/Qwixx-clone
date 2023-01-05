@@ -1,24 +1,61 @@
 <script lang="ts">
-	import type { Colors } from '$lib/types';
-	import Icon from '$lib/components/icon/icon.svelte';
+	import type { Color } from '$lib/types';
+	import { dice } from '$lib/stores/dice';
+	import { scores } from '$lib/stores/scores';
+	import { beforeUpdate, afterUpdate } from 'svelte';
+	import { createArray } from '$lib/utils';
+	import ScoreRowBox from './score-row-box.svelte';
 
+	/** Props */
 	export let ascOrder: boolean = true;
-	export let color: Colors = 'red';
+	export let color: Color = 'red';
 
-	const boxes = Array(11)
-		.fill(0)
-		.map((_, i) => (ascOrder ? i + 2 : 12 - i));
+	let whiteValue: number;
+	let colorValue1: number;
+	let colorValue2: number;
+
+	/** Get Box Values */
+	const boxes = createArray(11, 0).map((_, i) => (ascOrder ? i + 2 : 12 - i));
+
+	beforeUpdate(() => {
+		/** Find Available Score Options */
+		const whiteDice = $dice.filter((die) => die.color === 'white');
+		const colorDie = $dice.find((die) => die.color === color)!;
+
+		whiteValue = whiteDice[0].value + whiteDice[1].value;
+		colorValue1 = whiteDice[0].value + colorDie.value;
+		colorValue2 = whiteDice[1].value + colorDie.value;
+	});
+
+	$: currentScore = $scores.find((score) => score.color === color)!;
+	$: rightmostNumber = ascOrder
+		? Math.max(...currentScore.selectedNumbers)
+		: Math.min(...currentScore.selectedNumbers);
+
+	function isValidOption(boxNumber: number, isRolledNumber: boolean): boolean {
+		// is valid if number is to the right of the rightmost number
+
+		const isLocked = currentScore.locked;
+
+		return !isLocked && isRolledNumber;
+	}
 </script>
 
 <div class={`score-row score-row--${color}`}>
-	<!-- class={`score-row ${color}`} -->
 	{#each boxes as boxNumber}
-		<div class={`score-row__box score-row__box--${color}`}>
-			{boxNumber}
-		</div>
+		<ScoreRowBox
+			value={boxNumber}
+			{color}
+			isAvailable={ascOrder ? boxNumber > rightmostNumber : boxNumber < rightmostNumber}
+			validColorOption={isValidOption(
+				boxNumber,
+				colorValue1 === boxNumber || colorValue2 === boxNumber
+			)}
+			validWhiteOption={isValidOption(boxNumber, whiteValue === boxNumber)}
+		/>
 	{/each}
 	<div class={`score-row__box score-row__box--${color}`}>
-		<Icon icon="unlock" />
+		<ScoreRowBox value={-1} {color} validColorOption={false} validWhiteOption={false} />
 	</div>
 </div>
 
@@ -30,51 +67,24 @@
 		margin-bottom: 10px;
 		padding: 7px;
 	}
-	.score-row__box {
-		box-sizing: border-box;
-		height: 50px;
-		width: 50px;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		font-size: 20pt;
-		margin: 2px;
-		border-radius: 5px;
-	}
 
 	/* red */
 	.score-row--red {
-		color: red;
 		background-color: red;
-	}
-	.score-row__box--red {
-		background-color: lightpink;
 	}
 
 	/* yellow */
 	.score-row--yellow {
-		color: gold;
 		background-color: gold;
-	}
-	.score-row__box--yellow {
-		background-color: lightyellow;
 	}
 
 	/* green */
 	.score-row--green {
-		color: green;
 		background-color: green;
-	}
-	.score-row__box--green {
-		background-color: lightgreen;
 	}
 
 	/* blue */
 	.score-row--blue {
-		color: blue;
 		background-color: blue;
-	}
-	.score-row__box--blue {
-		background-color: lightblue;
 	}
 </style>
