@@ -1,9 +1,17 @@
 <script lang="ts">
 	import '$lib/icon-library';
+	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
 	import Die from '$lib/components/die.svelte';
 	import ScoreRow from '$lib/components/score-row.svelte';
+	import { scores } from '$lib/stores/scores';
 	import { dice } from '$lib/stores/dice';
+	import { turn } from '$lib/stores/turn';
 	import { createArray } from '$lib/utils';
+
+	function handleActionClick() {
+		// check for adding scores
+		$turn.isMyTurn ? turn.endTurn() : turn.startTurn();
+	}
 </script>
 
 <svelte:head>
@@ -19,17 +27,30 @@
 		{/each}
 	</div>
 	<div class="actions">
-		<button class="roll-button" on:click={dice.rollDice}>Roll Dice</button>
+		<div class="buttons">
+			<button class="action-button" on:click={handleActionClick}>
+				{#if $turn.isMyTurn}
+					End Turn
+				{:else}
+					Roll Dice
+				{/if}</button
+			>
+		</div>
 		<div class="empty-rolls">
-			<h5>Scores Not Taken</h5>
+			<h5>Turns Passed</h5>
 			<div class="empty-roll-marker__wrapper">
-				{#each createArray(4) as box}
-					<div class="empty-roll-marker" />
+				{#each createArray(4) as box, i}
+					<div class="empty-roll-marker">
+						{#if $scores.passedTurns >= i + 1}
+							<FontAwesomeIcon icon={['fas', 'x']} />
+						{/if}
+					</div>
 				{/each}
 			</div>
 		</div>
 	</div>
 	<div class="scorecard">
+		<div class="lock-boxes"><h5>At least 5 X's</h5></div>
 		<ScoreRow color="red" ascOrder={true} />
 		<ScoreRow color="yellow" ascOrder={true} />
 		<ScoreRow color="green" ascOrder={false} />
@@ -68,9 +89,9 @@
 		padding: 15px;
 		display: flex;
 		justify-content: space-between;
-		width: 70%;
+		width: 100%;
 	}
-	.roll-button {
+	.action-button {
 		height: 60px;
 		padding: 0.5em 1em;
 		font-size: 16pt;
@@ -78,7 +99,7 @@
 		box-shadow: 2px 2px 2px grey;
 		border: 1px solid gray;
 	}
-	.roll-button:active {
+	.action-button:active {
 		box-shadow: 0px 0px 2px grey;
 	}
 	.empty-rolls {
@@ -98,10 +119,26 @@
 		border-radius: 10px;
 		border: 1px solid black;
 		margin: 0px 5px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 	}
 	.scorecard {
-		/* width: 512px; */
-		/* padding: 10px; */
-		/* margin-top: 10px; */
+		position: relative;
+	}
+	.lock-boxes {
+		top: -12px;
+		right: 7px;
+		width: 106px;
+		height: 110%;
+		border: 1px solid black;
+		position: absolute;
+		text-align: center;
+		border-radius: 5px;
+	}
+	.lock-boxes h5 {
+		margin: 0px;
+		margin-bottom: 5px;
+		pointer-events: none;
 	}
 </style>

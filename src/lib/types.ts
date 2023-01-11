@@ -14,3 +14,5 @@ export type ScoreRow = {
 	selectedNumbers: number[];
 	locked: boolean;
 };
+
+export type BoxSelection = { color: Color; value: number };

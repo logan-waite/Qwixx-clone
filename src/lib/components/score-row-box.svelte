@@ -2,7 +2,8 @@
 	import type { Color } from '$lib/types';
 	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
 	import { scores } from '$lib/stores/scores';
-	import { beforeUpdate, createEventDispatcher } from 'svelte';
+	import { turn } from '$lib/stores/turn';
+	import { objectsAreEqual } from '$lib/utils';
 
 	export let color: Color;
 	export let value: number;
@@ -11,16 +12,26 @@
 	export let validWhiteOption: boolean;
 
 	let hover: boolean = false;
-	// const dispatch = createEventDispatcher();
 
-	$: currentScore = $scores.find((score) => score.color === color)!;
+	$: currentScore = $scores.scoreRows.find((score) => score.color === color)!;
 
-	$: showHighlight = hover && isAvailable && (validColorOption || validWhiteOption);
-	$: isSelected = currentScore.selectedNumbers.includes(value);
+	$: isSelected =
+		objectsAreEqual($turn.selectedWhiteValue, { color, value }) ||
+		objectsAreEqual($turn.selectedColorValue, { color, value });
+
+	$: isScored = currentScore.selectedNumbers.includes(value);
+	$: showHighlight = hover && (isAvailable || isSelected) && (validColorOption || validWhiteOption);
 
 	function handleClick() {
-		if (validColorOption || validWhiteOption) {
-			scores.selectNumber(color, value);
+		console.log('click');
+		if (isSelected && validWhiteOption) {
+			turn.makeSelection('white', null);
+		} else if (isSelected && validColorOption) {
+			turn.makeSelection('colored', null);
+		} else if (isAvailable && validWhiteOption) {
+			turn.makeSelection('white', { color, value });
+		} else if (isAvailable && validColorOption) {
+			turn.makeSelection('colored', { color, value });
 		}
 	}
 </script>
@@ -43,7 +54,11 @@
 		<FontAwesomeIcon class="score-row__box--selected" icon={['fas', 'x']} />
 	{/if}
 
-	{#if isAvailable && validWhiteOption}
+	{#if isScored}
+		<FontAwesomeIcon class="score-row__box--scored" icon={['fas', 'x']} />
+	{/if}
+
+	{#if isAvailable && validWhiteOption && !isSelected}
 		<FontAwesomeIcon
 			class="score-row__box--attention"
 			icon={['fad', 'circle-exclamation']}
@@ -61,7 +76,7 @@
 </button>
 
 <style>
-	:global(.score-row__box) {
+	.score-row__box {
 		box-sizing: border-box;
 		height: 50px;
 		width: 50px;
@@ -80,10 +95,17 @@
 		font-size: 10pt;
 	}
 
-	:global(.score-row__box--selected) {
+	:global(.score-row__box--scored) {
 		color: black;
 		position: absolute;
 		opacity: 0.5;
+		font-size: 24pt;
+	}
+
+	:global(.score-row__box--selected) {
+		color: black;
+		position: absolute;
+		opacity: 0.25;
 		font-size: 24pt;
 	}
 
@@ -93,19 +115,19 @@
 		cursor: pointer;
 	}
 
-	:global(.score-row__box--red) {
+	.score-row__box--red {
 		color: red;
 		background-color: lightpink;
 	}
-	:global(.score-row__box--yellow) {
+	.score-row__box--yellow {
 		color: gold;
 		background-color: lightyellow;
 	}
-	:global(.score-row__box--green) {
+	.score-row__box--green {
 		color: green;
 		background-color: lightgreen;
 	}
-	:global(.score-row__box--blue) {
+	.score-row__box--blue {
 		color: blue;
 		background-color: lightblue;
 	}
