@@ -2,8 +2,9 @@
 	import type { Color } from '$lib/types';
 	import { dice } from '$lib/stores/dice';
 	import { scores } from '$lib/stores/scores';
+	import { turn } from '$lib/stores/turn';
 	import { beforeUpdate, afterUpdate } from 'svelte';
-	import { createArray } from '$lib/utils';
+	import { createArray, getValueByColor, min, max } from '$lib/utils';
 	import ScoreRowBox from './score-row-box.svelte';
 
 	/** Props */
@@ -13,6 +14,8 @@
 	let whiteValue: number;
 	let colorValue1: number;
 	let colorValue2: number;
+
+	const getColorValue = getValueByColor(color);
 
 	/** Get Box Values */
 	const boxes = createArray(11, 0).map((_, i) => (ascOrder ? i + 2 : 12 - i));
@@ -27,36 +30,40 @@
 		colorValue2 = whiteDice[1].value + colorDie.value;
 	});
 
-	$: currentScore = $scores.find((score) => score.color === color)!;
+	$: currentScore = $scores.scoreRows.find((score) => score.color === color)!;
+	$: selectedColorNumber = getColorValue($turn.selectedColorValue);
+	$: selectedWhiteNumber = getColorValue($turn.selectedWhiteValue);
 	$: rightmostNumber = ascOrder
-		? Math.max(...currentScore.selectedNumbers)
-		: Math.min(...currentScore.selectedNumbers);
-
-	function isValidOption(boxNumber: number, isRolledNumber: boolean): boolean {
-		// is valid if number is to the right of the rightmost number
-
-		const isLocked = currentScore.locked;
-
-		return !isLocked && isRolledNumber;
+		? max(...currentScore.selectedNumbers, selectedColorNumber, selectedWhiteNumber)
+		: min(...currentScore.selectedNumbers, selectedColorNumber, selectedWhiteNumber);
+	$: {
 	}
 </script>
 
 <div class={`score-row score-row--${color}`}>
-	{#each boxes as boxNumber}
+	{#each boxes as boxNumber, i}
+		{@const numberIsFree = i + 1 === boxes.length ? currentScore.selectedNumbers.length >= 5 : true}
 		<ScoreRowBox
 			value={boxNumber}
 			{color}
 			isAvailable={ascOrder ? boxNumber > rightmostNumber : boxNumber < rightmostNumber}
-			validColorOption={isValidOption(
-				boxNumber,
-				colorValue1 === boxNumber || colorValue2 === boxNumber
-			)}
-			validWhiteOption={isValidOption(boxNumber, whiteValue === boxNumber)}
+			validColorOption={numberIsFree &&
+				!currentScore.locked &&
+				(colorValue1 === boxNumber || colorValue2 === boxNumber)}
+			validWhiteOption={selectedColorNumber == null &&
+				numberIsFree &&
+				!currentScore.locked &&
+				whiteValue === boxNumber}
 		/>
 	{/each}
-	<div class={`score-row__box score-row__box--${color}`}>
-		<ScoreRowBox value={-1} {color} validColorOption={false} validWhiteOption={false} />
-	</div>
+	<ScoreRowBox
+		value={-1}
+		isAvailable={false}
+		{color}
+		validColorOption={true}
+		validWhiteOption={true}
+		on:click={() => console.log('lock')}
+	/>
 </div>
 
 <style>
@@ -64,7 +71,7 @@
 		/* border-radius: 7px; */
 		display: flex;
 		justify-content: space-between;
-		margin-bottom: 10px;
+		margin-top: 10px;
 		padding: 7px;
 	}
 
