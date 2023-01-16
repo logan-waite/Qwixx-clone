@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Colors, DieValue } from '$lib/types';
+	import type { Color, DieValue } from '$lib/types';
 	import { createArray } from '$lib/utils';
 
-	export let color: Colors | 'white' = 'white';
+	export let color: Color | 'white' = 'white';
 	export let pipColor: 'white' | 'black' = 'black';
 	export let value: DieValue = 1;
 	export let locked = false;

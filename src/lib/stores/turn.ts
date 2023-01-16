@@ -1,7 +1,8 @@
-import type { Color, BoxSelection } from '$lib/types';
+import type { BoxSelection } from '$lib/types';
+import { objectsAreEqual } from '$lib/utils';
 import { writable } from 'svelte/store';
 import { dice } from './dice';
-import { scores } from './scores';
+import { score } from './scores';
 
 type Turn = {
 	isMyTurn: boolean;
@@ -22,18 +23,19 @@ function createTurn() {
 
 	function endTurn() {
 		update((turn) => {
-			const isMyTurn = false;
-
 			if (turn.selectedWhiteValue == null && turn.selectedColorValue == null) {
-				scores.passTurn();
+				score.passTurn();
+			} else if (
+				objectsAreEqual(turn.selectedWhiteValue, turn.selectedColorValue) &&
+				turn.selectedWhiteValue !== null
+			) {
+				score.selectNumber(turn.selectedWhiteValue);
 			} else {
-				turn.selectedWhiteValue != null && scores.selectNumber(turn.selectedWhiteValue);
-				turn.selectedColorValue != null && scores.selectNumber(turn.selectedColorValue);
-
-				// if the selected number locks a row
+				turn.selectedWhiteValue != null && score.selectNumber(turn.selectedWhiteValue);
+				turn.selectedColorValue != null && score.selectNumber(turn.selectedColorValue);
 			}
 
-			return { ...turn, selectedColorValue: null, selectedWhiteValue: null, isMyTurn };
+			return { ...turn, selectedColorValue: null, selectedWhiteValue: null, isMyTurn: false };
 		});
 	}
 
@@ -44,10 +46,7 @@ function createTurn() {
 		dice.rollDice();
 	}
 
-	function makeSelection(
-		selectingFor: 'white' | 'colored',
-		selection: { color: Color; value: number } | null
-	) {
+	function makeSelection(selectingFor: 'white' | 'color', selection: BoxSelection | null) {
 		update((turn) => {
 			let selectedWhiteValue = turn.selectedWhiteValue;
 			let selectedColorValue = turn.selectedColorValue;
@@ -56,7 +55,7 @@ function createTurn() {
 				case 'white':
 					selectedWhiteValue = selection;
 					break;
-				case 'colored':
+				case 'color':
 					selectedColorValue = selection;
 					break;
 			}

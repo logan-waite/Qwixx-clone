@@ -10,18 +10,45 @@ export function randomDieNumber(): DieValue {
 	return randomNumber(1, 6) as DieValue;
 }
 
-export function max(...args: Array<number | null>): number {
-	return args.reduce(
+export function max(...numbers: Array<number | null>): number {
+	return numbers.reduce(
 		(max: number, val: number | null) => (val != null && val > max ? val : max),
 		-Infinity
 	);
 }
 
-export function min(...args: Array<number | null>): number {
-	return args.reduce(
+export function min(...numbers: Array<number | null>): number {
+	return numbers.reduce(
 		(min: number, val: number | null) => (val != null && val < min ? val : min),
 		Infinity
 	);
+}
+
+export function pipe(...funcs: any[]) {
+	return function _pipe(startingValue: any) {
+		return funcs.reduce((endValue, func) => func(endValue), startingValue);
+	};
+}
+
+export function map<T, U>(func: (arg: T) => U) {
+	return function _map(list: T[]) {
+		const result: U[] = [];
+		for (const val of list) {
+			result.push(func(val));
+		}
+
+		return result;
+	};
+}
+
+export function pipeSum(...nums: number[]) {
+	return function _sum(nums2: number | number[]) {
+		if (Array.isArray(nums2)) {
+			return sum(...nums, ...nums2);
+		} else {
+			return sum(...nums, nums2);
+		}
+	};
 }
 
 export function getValueByColor(color: Color) {

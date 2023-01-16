@@ -15,4 +15,4 @@ export type ScoreRow = {
 	locked: boolean;
 };
 
-export type BoxSelection = { color: Color; value: number };
+export type BoxSelection = { color: Color; value: number; willLock: boolean };

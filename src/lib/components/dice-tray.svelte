@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Die from '$lib/components/die.svelte';
-	import { dice } from '$lib/stores/dice';
+	import { dice } from '$lib/stores/index';
 </script>
 
 <div class="dice-tray">

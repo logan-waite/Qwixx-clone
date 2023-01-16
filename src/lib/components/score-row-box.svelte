@@ -1,37 +1,53 @@
 <script lang="ts">
-	import type { Color } from '$lib/types';
+	import type { BoxSelection, Color } from '$lib/types';
 	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
-	import { scores } from '$lib/stores/scores';
-	import { turn } from '$lib/stores/turn';
-	import { objectsAreEqual } from '$lib/utils';
+	import { turn, score } from '$lib/stores/index';
 
 	export let color: Color;
 	export let value: number;
-	export let isAvailable: boolean;
-	export let validColorOption: boolean;
-	export let validWhiteOption: boolean;
+	export let isAvailable: boolean = false;
+	export let validColorOption: boolean = false;
+	export let validWhiteOption: boolean = false;
+	export let isLockNumber: boolean = false;
+	export let isSelected: boolean = false;
 
 	let hover: boolean = false;
 
-	$: currentScore = $scores.scoreRows.find((score) => score.color === color)!;
-
-	$: isSelected =
-		objectsAreEqual($turn.selectedWhiteValue, { color, value }) ||
-		objectsAreEqual($turn.selectedColorValue, { color, value });
-
+	$: currentScore = $score.scoreRows.find((row) => row.color === color)!;
 	$: isScored = currentScore.selectedNumbers.includes(value);
 	$: showHighlight = hover && (isAvailable || isSelected) && (validColorOption || validWhiteOption);
 
 	function handleClick() {
-		console.log('click');
 		if (isSelected && validWhiteOption) {
 			turn.makeSelection('white', null);
 		} else if (isSelected && validColorOption) {
-			turn.makeSelection('colored', null);
+			turn.makeSelection('color', null);
+		} else if (isSelected && validWhiteOption && validColorOption) {
+			makeSelectionWhenBothValid(null);
+		} else if (isAvailable && validWhiteOption && validColorOption) {
+			makeSelectionWhenBothValid({ color, value, willLock: isLockNumber });
 		} else if (isAvailable && validWhiteOption) {
-			turn.makeSelection('white', { color, value });
+			turn.makeSelection('white', { color, value, willLock: isLockNumber });
 		} else if (isAvailable && validColorOption) {
-			turn.makeSelection('colored', { color, value });
+			turn.makeSelection('color', { color, value, willLock: isLockNumber });
+		}
+	}
+
+	function makeSelectionWhenBothValid(selection: BoxSelection | null) {
+		if (selection === null) {
+			turn.makeSelection('white', null);
+			turn.makeSelection('color', null);
+			return;
+		}
+
+		// default to white when there is conflict
+		if ($turn.selectedWhiteValue && !$turn.selectedColorValue) {
+			turn.makeSelection('color', selection);
+		} else if (!$turn.selectedWhiteValue && !$turn.selectedColorValue) {
+			turn.makeSelection('white', selection);
+			turn.makeSelection('color', selection);
+		} else {
+			turn.makeSelection('white', selection);
 		}
 	}
 </script>
