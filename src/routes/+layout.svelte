@@ -1,10 +1,13 @@
+<script>
+	import '$lib/icon-library';
+</script>
+
 <svelte:head>
 	<title>Qwixx Clone</title>
 </svelte:head>
 
 <h1 class="title">Qwixx Clone!</h1>
 <slot />
-<aside>Hello There</aside>
 
 <style>
 	:global(body) {

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import '$lib/icon-library';
 	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
-	import Die from '$lib/components/die.svelte';
-	import ScoreRow from '$lib/components/score-row.svelte';
+	import Die from './die.svelte';
+	import ScoreRow from './score-row.svelte';
+	import DefaultButton from '$lib/components/default-button.svelte';
 	import { dice, turn, game, calculateFinalScore, score } from '$lib/stores/index';
 	import { createArray } from '$lib/utils';
 	import { beforeUpdate } from 'svelte';
@@ -31,13 +31,13 @@
 	</div>
 	<div class="actions">
 		<div class="buttons">
-			<button class="action-button" on:click={handleActionClick}>
+			<DefaultButton on:click={handleActionClick}>
 				{#if $turn.isMyTurn}
 					End Turn
 				{:else}
 					Roll Dice
-				{/if}</button
-			>
+				{/if}
+			</DefaultButton>
 		</div>
 		{#if $game.gameEnded}
 			<h4>Game Over!</h4>
@@ -90,17 +90,6 @@
 		display: flex;
 		justify-content: space-between;
 		width: 100%;
-	}
-	.action-button {
-		height: 60px;
-		padding: 0.5em 1em;
-		font-size: 16pt;
-		border-radius: 10px;
-		box-shadow: 2px 2px 2px grey;
-		border: 1px solid gray;
-	}
-	.action-button:active {
-		box-shadow: 0px 0px 2px grey;
 	}
 	.empty-rolls {
 		text-align: center;

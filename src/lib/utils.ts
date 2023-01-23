@@ -10,6 +10,11 @@ export function randomDieNumber(): DieValue {
 	return randomNumber(1, 6) as DieValue;
 }
 
+export function randomLetter() {
+	const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+	return letters[randomNumber(0, 25)];
+}
+
 export function max(...numbers: Array<number | null>): number {
 	return numbers.reduce(
 		(max: number, val: number | null) => (val != null && val > max ? val : max),
@@ -68,8 +73,15 @@ export function sum(...args: number[]): number {
 	return args.reduce((total, num) => total + num, 0);
 }
 
-export function createArray<T>(length = 0, fill: T | undefined = undefined): Array<T> {
-	return Array(length).fill(fill);
+export function createArray<T>(
+	length = 0,
+	fill: ((_: undefined) => T) | T | undefined = undefined
+): Array<T> {
+	if (fill instanceof Function) {
+		return Array(length).fill(undefined).map(fill);
+	} else {
+		return Array(length).fill(fill);
+	}
 }
 
 export function objectsAreEqual<T extends object>(a: T | null, b: T | null) {
