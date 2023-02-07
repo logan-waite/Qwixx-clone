@@ -1,13 +1,8 @@
-import type { ScoreRow, BoxSelection } from '$lib/types';
+import type { Score, ScoreRow, BoxSelection } from '$lib/types';
 import { writable } from 'svelte/store';
-import { pipe, map, pipeSum } from '$lib/utils';
+import { pipe, map, sumPlus } from '$lib/utils/base';
 
-type Score = {
-	passedTurns: number;
-	scoreRows: ScoreRow[];
-};
-
-const initialScore: Score = {
+export const initialScore: Score = {
 	passedTurns: 0,
 	scoreRows: [
 		{
@@ -72,7 +67,7 @@ export const score = createScore();
 export function calculateFinalScore(score: Score): number {
 	const finalScore = pipe(
 		map((row: ScoreRow) => row.selectedNumbers.reduce((total, _, i) => total + i + 1, 0)),
-		pipeSum(score.passedTurns * -5)
+		sumPlus(score.passedTurns * -5)
 	)(score.scoreRows);
 
 	return finalScore;

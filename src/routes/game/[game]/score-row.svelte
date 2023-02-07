@@ -1,10 +1,20 @@
 <script lang="ts">
 	import type { Color } from '$lib/types';
-	import { dice, turn, game, score } from '$lib/stores/index';
+	import { dice, turn, getGameStore, score, type GameStore } from '$lib/stores/index';
 
-	import { beforeUpdate } from 'svelte';
-	import { createArray, getValueByColor, min, max, objectsAreEqual } from '$lib/utils';
+	import { beforeUpdate, onMount } from 'svelte';
+	import { createArray, min, max, objectsAreEqual } from '$lib/utils/base';
+	import { getValueByColor } from '$lib/utils/game';
 	import ScoreRowBox from './score-row-box.svelte';
+	import { goto } from '$app/navigation';
+
+	let game: GameStore | null;
+	onMount(async () => {
+		game = await getGameStore();
+		if (!game) {
+			goto('/');
+		}
+	});
 
 	/** Props */
 	export let ascOrder: boolean = true;
@@ -61,7 +71,7 @@
 		<ScoreRowBox
 			value={boxNumber}
 			{color}
-			isAvailable={!$game.gameEnded &&
+			isAvailable={$game?.gameState === 'in progress' &&
 				$turn.isMyTurn &&
 				(ascOrder ? boxNumber > rightmostNumber : boxNumber < rightmostNumber)}
 			{isSelected}

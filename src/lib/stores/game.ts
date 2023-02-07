@@ -1,36 +1,21 @@
 import { db } from '$lib/firebase';
-import { writable, type Writable } from 'svelte/store';
+import { get, writable, type Writable } from 'svelte/store';
 import {
 	collection,
 	doc,
+	DocumentReference,
 	getCountFromServer,
 	getDocFromServer,
 	onSnapshot,
-	setDoc,
-	type DocumentReference
+	setDoc
 } from 'firebase/firestore';
-import { createArray, randomLetter } from '$lib/utils';
-import type { Color, DieValue } from '$lib/types';
+import { createArray, randomLetter } from '$lib/utils/base';
+import type { GameState } from '$lib/types';
 
-type GameState = {
-	gameEnded: boolean;
-	players: Array<{
-		name: string;
-		score: number;
-		currentTurn: boolean;
-	}>;
-	diceRoll: Array<{ value: number; color: string }>;
-};
-
-const initialGameState = {
-	gameEnded: false,
-	players: [
-		{
-			name: 'Fred Astaire',
-			score: 0,
-			currentTurn: false
-		}
-	],
+const initialGameState: GameState = {
+	id: '',
+	status: 'waiting',
+	players: [],
 	diceRoll: [
 		{ value: 1, color: 'white' },
 		{ value: 2, color: 'white' },
@@ -41,13 +26,28 @@ const initialGameState = {
 	]
 };
 
-type GameStore = {
+export type GameStore = {
 	subscribe: Writable<GameState>['subscribe'];
 	endGame: () => void;
+	ref: DocumentReference;
 };
 
-function gameStore(gameDoc: DocumentReference): GameStore {
-	const { subscribe, update } = writable(initialGameState, (set) => {
+function gameStore({
+	gameDoc,
+	code,
+	existingGameState
+}: {
+	gameDoc?: DocumentReference;
+	code?: string;
+	existingGameState?: GameState;
+} = {}): GameStore {
+	if (!gameDoc) {
+		throw new Error('No game doc passed to game store!');
+	}
+	const gameState = code
+		? { ...(existingGameState ?? initialGameState), id: code }
+		: existingGameState ?? initialGameState;
+	const { subscribe, update } = writable(gameState, (set) => {
 		const unsubscribe = onSnapshot(gameDoc, (snapshot) => {
 			set(snapshot.data() as GameState);
 		});
@@ -61,50 +61,101 @@ function gameStore(gameDoc: DocumentReference): GameStore {
 
 	return {
 		subscribe,
-		endGame
+		endGame,
+		ref: gameDoc
 	};
 }
 
-let game: GameStore;
+let game: GameStore | null = null;
 
-export async function setupGameStore(gameCode?: string): Promise<GameStore | null> {
-	if (game) {
-		console.log('game store already exists!');
-		return game;
+export function getGameStore() {
+	return game;
+}
+
+export async function joinGame(gameCode: string) {
+	if (!gameCode) {
+		console.log('No game code entered!');
+		return null;
 	}
 
-	if (gameCode) {
-		console.log(`attempting to join game with code ${gameCode}`);
-		const existingGameDoc = doc(db, 'games', gameCode);
-		const gameDoc = await getDocFromServer(existingGameDoc);
-		if (gameDoc.exists()) {
-			game = gameStore(existingGameDoc);
-			console.log('game joined');
-			return game;
-		} else {
-			console.error(`Unable to find game with game code "${gameCode}"`);
-			return null;
-		}
+	console.log(`attempting to join game with code ${gameCode}`);
+	const existingGameDoc = doc(db, 'games', gameCode);
+	const gameDoc = await getDocFromServer(existingGameDoc);
+	if (gameDoc.exists()) {
+		game = gameStore({ gameDoc: gameDoc.ref, existingGameState: gameDoc.data() as GameState });
+		console.log(`game ${gameCode} successfully joined!`);
+		return game;
 	} else {
-		console.log('attempting to create game');
-		// generate a new code and check to see if it's being used
-		const activeGames = (await getCountFromServer(collection(db, 'games'))).data().count;
-
-		for (const _ in createArray(activeGames + 1)) {
-			const code = createArray(5, randomLetter).join('');
-			const gameDoc = await getDocFromServer(doc(db, 'games', code));
-			if (!gameDoc.exists()) {
-				const newGameDoc = doc(db, 'games', code);
-				await setDoc(newGameDoc, initialGameState);
-				game = gameStore(newGameDoc);
-				console.log(`game created with code ${code}`);
-				return game;
-			}
-		}
-		// If we reach here, we were unable to get a valid code
-		console.error('unable to generate a valid game code');
+		console.error(`Unable to find game with game code "${gameCode}"`);
 		return null;
 	}
 }
+
+export async function createGame() {
+	console.log('attempting to create game');
+	// generate a new code and check to see if it's being used
+	const activeGames = (await getCountFromServer(collection(db, 'games'))).data().count;
+
+	for (const _ in createArray(activeGames + 1)) {
+		const code = createArray(5, randomLetter).join('');
+		const gameDoc = await getDocFromServer(doc(db, 'games', code));
+		if (!gameDoc.exists()) {
+			const newGameDoc = doc(db, 'games', code);
+			game = gameStore({ gameDoc: newGameDoc, code });
+			await setDoc(newGameDoc, get(game));
+			console.log(`game created with code ${code}`);
+			return game;
+		}
+	}
+	// If we reach here, we were unable to get a valid code
+	console.error('unable to generate a valid game code');
+	return null;
+}
+
+// export async function setupGameStore({
+// 	gameCode = undefined
+// }: // name
+// {
+// 	gameCode?: string;
+// 	// name?: string;
+// } = {}): Promise<GameStore | null> {
+// 	if (game) {
+// 		console.log('game store already exists!');
+// 		return game;
+// 	}
+
+// 	if (gameCode) {
+// 		console.log(`attempting to join game with code ${gameCode}`);
+// 		const existingGameDoc = doc(db, 'games', gameCode);
+// 		const gameDoc = await getDocFromServer(existingGameDoc);
+// 		if (gameDoc.exists()) {
+// 			game = gameStore(existingGameDoc);
+// 			console.log('game joined');
+// 			return game;
+// 		} else {
+// 			console.error(`Unable to find game with game code "${gameCode}"`);
+// 			return null;
+// 		}
+// 	} else {
+// 		console.log('attempting to create game');
+// 		// generate a new code and check to see if it's being used
+// 		const activeGames = (await getCountFromServer(collection(db, 'games'))).data().count;
+
+// 		for (const _ in createArray(activeGames + 1)) {
+// 			const code = createArray(5, randomLetter).join('');
+// 			const gameDoc = await getDocFromServer(doc(db, 'games', code));
+// 			if (!gameDoc.exists()) {
+// 				const newGameDoc = doc(db, 'games', code);
+// 				game = gameStore(newGameDoc, code);
+// 				await setDoc(newGameDoc, get(game));
+// 				console.log(`game created with code ${code}`);
+// 				return game;
+// 			}
+// 		}
+// 		// If we reach here, we were unable to get a valid code
+// 		console.error('unable to generate a valid game code');
+// 		return null;
+// 	}
+// }
 
 // export const game = setupGameStore();

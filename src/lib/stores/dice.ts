@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { randomDieNumber } from '$lib/utils';
+import { randomDieNumber } from '$lib/utils/game';
 import type { Die } from '$lib/types';
 
 const diceList: Die[] = [

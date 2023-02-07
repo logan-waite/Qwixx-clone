@@ -1,4 +1,4 @@
 export * from './dice';
 export * from './game';
-export * from './scores';
+export * from './score';
 export * from './turn';

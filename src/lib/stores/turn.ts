@@ -1,8 +1,8 @@
 import type { BoxSelection } from '$lib/types';
-import { objectsAreEqual } from '$lib/utils';
+import { objectsAreEqual } from '$lib/utils/base';
 import { writable } from 'svelte/store';
 import { dice } from './dice';
-import { score } from './scores';
+import { score } from './score';
 
 type Turn = {
 	isMyTurn: boolean;

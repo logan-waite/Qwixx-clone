@@ -1,5 +1,10 @@
-<script>
-	import '$lib/icon-library';
+<script lang="ts">
+	import { beforeNavigate } from '$app/navigation';
+
+	// Navigation rules will go here
+	beforeNavigate((navigation) => {
+		console.log({ navigation });
+	});
 </script>
 
 <svelte:head>

@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import {
+	DocumentReference,
+	getFirestore,
+	runTransaction,
+	Transaction,
+	Firestore
+} from 'firebase/firestore';
 
 const firebaseConfig = {
 	apiKey: 'AIzaSyBDOH4aj4bLXV5UnFCc_5JhOo7jNqjoH0w',
@@ -14,3 +20,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
+
+// Run Safe Transaction function
+// function setupTransactions(db: Firestore) {
+// 	return async function runSafeTransactionOn<T>(
+// 		docRef: DocumentReference,
+// 		updateFunction: (transaction: Transaction) => Promise<T>
+// 	): Promise<T> {
+// 		return await runTransaction(db, async (transaction) => {
+// 			try{
+// 				const doc = await transaction.get(docRef);
+// 				if (!doc.exists()) {
+// 					throw "Game doesn't exist!";
+// 				} else {
+// 					return updateFunction(transaction);
+// 				}
+// 			}
+// 		});
+// 	};
+// }
+
+// export const runTransactionOn = setupTransactions(db);

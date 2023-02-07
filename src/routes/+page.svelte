@@ -1,32 +1,45 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import DefaultButton from '$lib/components/default-button.svelte';
-	import { setupGameStore } from '$lib/stores';
+	import { createGame, joinGame, type GameStore } from '$lib/stores';
 	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
 
 	let gameCode: string;
+	let game: GameStore | null;
 
-	/** 
-    On Create Game:
-    - Check Server for available codes
-    - If no codes, show error
-    - If available codes:
-        - Navigate to lobby page
-    */
-
-	/**
-	 * On Join Game:
-	 * - Check server if code is active
-	 * - If not active, show error
-	 * - If active:
-	 *   - Join Lobby for code
-	 */
+	function handleClick(action: 'create' | 'join') {
+		return async function _handleClick() {
+			switch (action) {
+				case 'create':
+					game = await createGame();
+					break;
+				case 'join':
+					if (gameCode) {
+						game = await joinGame(gameCode);
+					} else {
+						console.warn('no game code!');
+						return;
+					}
+					break;
+			}
+			console.log({ game: $game });
+			$game && goto(`/lobby/${$game.id}`);
+		};
+	}
 </script>
 
 <main class="entry-wrapper">
-	<DefaultButton on:click={() => setupGameStore()}>Create Game</DefaultButton>
+	<DefaultButton on:click={handleClick('create')}>Create Game</DefaultButton>
 	<div class="form-group">
-		<input type="text" placeholder="Join Game Code" bind:value={gameCode} />
-		<DefaultButton on:click={() => setupGameStore(gameCode)}>
+		<input
+			class="default-input"
+			type="text"
+			placeholder="Join Game Code"
+			bind:value={gameCode}
+			on:input={(e) => (gameCode = gameCode.toUpperCase())}
+			maxlength="5"
+		/>
+		<DefaultButton on:click={handleClick('join')}>
 			<FontAwesomeIcon icon="chevron-right" />
 		</DefaultButton>
 	</div>
@@ -40,8 +53,9 @@
 	.form-group {
 		display: flex;
 	}
-	.form-group input {
+	.default-input {
 		border-radius: 10px;
 		font-size: 16pt;
+		height: 60px;
 	}
 </style>

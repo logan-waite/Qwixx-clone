@@ -1,13 +1,9 @@
-import type { DieValue, Color } from './types';
+import { json } from '@sveltejs/kit';
 
 export function randomNumber(min: number, max: number) {
 	min = Math.ceil(min);
 	max = Math.floor(max);
 	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-export function randomDieNumber(): DieValue {
-	return randomNumber(1, 6) as DieValue;
 }
 
 export function randomLetter() {
@@ -46,25 +42,12 @@ export function map<T, U>(func: (arg: T) => U) {
 	};
 }
 
-export function pipeSum(...nums: number[]) {
+export function sumPlus(...nums: number[]) {
 	return function _sum(nums2: number | number[]) {
 		if (Array.isArray(nums2)) {
 			return sum(...nums, ...nums2);
 		} else {
 			return sum(...nums, nums2);
-		}
-	};
-}
-
-export function getValueByColor(color: Color) {
-	return function getValue<T extends { color: Color; value: number }>(container: T | T[] | null) {
-		if (Array.isArray(container)) {
-			const colorObj = container.find((v) => v.color === color);
-			return colorObj?.value ?? null;
-		} else if (container?.color && container.color === color) {
-			return container.value;
-		} else {
-			return null;
 		}
 	};
 }
@@ -92,31 +75,57 @@ export function objectsAreEqual<T extends object>(a: T | null, b: T | null) {
 		if (a !== b) {
 			return false;
 		}
-	}
-	const aKeys = Object.keys(a);
-	const bKeys = Object.keys(b);
+	} else {
+		const aKeys = Object.keys({});
+		const bKeys = Object.keys({});
 
-	// check same number of props
-	if (aKeys.length !== bKeys.length) {
-		return false;
-	}
-
-	// check has same props
-	const aKeysSet = new Set(aKeys);
-	for (const v of bKeys) {
-		aKeysSet.add(v);
-	}
-
-	if (aKeysSet.size !== aKeys.length) {
-		return false;
-	}
-
-	// check if values are the same
-	for (const key in a) {
-		if (a[key] !== b[key]) {
+		// check same number of props
+		if (aKeys.length !== bKeys.length) {
 			return false;
+		}
+
+		// check has same props
+		const aKeysSet = new Set(aKeys);
+		for (const v of bKeys) {
+			aKeysSet.add(v);
+		}
+
+		if (aKeysSet.size !== aKeys.length) {
+			return false;
+		}
+
+		// check if values are the same
+		for (const key in a) {
+			if (a[key] !== b[key]) {
+				return false;
+			}
 		}
 	}
 
 	return true;
+}
+
+export function generateGuid() {
+	return crypto.randomUUID();
+}
+
+export function saveToLocal(key: string, value: unknown) {
+	try {
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem(key, JSON.stringify(value));
+		}
+	} catch (e) {
+		console.error(`Unable to save ${value} to local storage.`);
+		console.error(e);
+	}
+}
+
+export function getFromLocal<T>(key: string): T {
+	let value;
+	try {
+		value = localStorage.getItem(key);
+	} catch (e) {
+		console.error('Unable to get value from local storage');
+	}
+	return value ? JSON.parse(value) : null;
 }

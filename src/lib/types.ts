@@ -15,4 +15,27 @@ export type ScoreRow = {
 	locked: boolean;
 };
 
+export type Score = {
+	passedTurns: number;
+	scoreRows: ScoreRow[];
+};
+
 export type BoxSelection = { color: Color; value: number; willLock: boolean };
+
+export type Player = {
+	id: string;
+	name: string;
+	score: Score;
+	state: 'waiting' | 'ready' | 'current turn';
+};
+
+export type SavedPlayer = Pick<Player, 'id' | 'name'>;
+
+export type GameStatus = 'waiting' | 'in progress' | 'ended';
+
+export type GameState = {
+	id: string;
+	status: GameStatus;
+	players: Array<Player>;
+	diceRoll: Array<Pick<Die, 'value' | 'color'>>;
+};

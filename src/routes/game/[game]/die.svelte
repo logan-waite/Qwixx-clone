@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Color, DieValue } from '$lib/types';
-	import { createArray } from '$lib/utils';
+	import { createArray } from '$lib/utils/base';
 
 	export let color: Color | 'white' = 'white';
 	export let pipColor: 'white' | 'black' = 'black';
