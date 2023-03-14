@@ -43,7 +43,6 @@ function createTurn() {
 		update((turn) => {
 			return { ...turn, isMyTurn: true };
 		});
-		dice.rollDice();
 	}
 
 	function makeSelection(selectingFor: 'white' | 'color', selection: BoxSelection | null) {

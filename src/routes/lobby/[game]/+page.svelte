@@ -2,10 +2,19 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import DefaultButton from '$lib/components/default-button.svelte';
 	import ToggleButton from '$lib/components/toggle-button.svelte';
-	import { getGameStore, initialScore, joinGame, type GameStore } from '$lib/stores';
-	import type { Player, SavedPlayer } from '$lib/types';
-	import { generateGuid, getFromLocal, saveToLocal } from '$lib/utils/base';
-	import { addPlayer, removePlayer, setGameStatus, updatePlayer } from '$lib/utils/firebase';
+	import {
+		addPlayerToGame,
+		getGameStore,
+		getPlayer,
+		initialScore,
+		joinGame,
+		type GameStore,
+		type PlayerStore
+	} from '$lib/stores';
+	import { getPlayerList, type PlayerListStore } from '$lib/stores/player-list';
+	import type { SavedPlayer } from '$lib/types';
+	import { generateGuid, getFromLocal, objectIsEmpty, saveToLocal } from '$lib/utils/base';
+	import { removePlayer, startGame, updatePlayer } from '$lib/utils/firebase';
 	import { onDestroy, onMount } from 'svelte';
 	import type { PageData } from './$types';
 
@@ -17,51 +26,55 @@
 	let savedPlayer = getFromLocal<SavedPlayer>('player');
 	let leavingGame = false;
 
-	let player: Player | null;
-	$: player = null;
-	$: playerIndex = $game?.players.findIndex((p) => p.id === player?.id);
+	let player: PlayerStore | null;
+	let playerList: PlayerListStore | null;
 
 	let readyToStart: boolean;
 	$: if ($game) {
 		readyToStart = $game.players.length > 1 && $game.players.every((p) => p.state === 'ready');
 	}
 
-	$: if ($game?.status === 'in progress') {
-		goto(`/game/${$game?.id}`);
+	$: if ($game?.status !== 'starting') {
+		// goto(`/game/${$game?.id}`);
+	}
+
+	$: {
+		console.log('playerLIst', $playerList);
 	}
 
 	onMount(async () => {
 		game ??= await joinGame(data.gameCode);
 
 		if (game && $game) {
+			playerList = await getPlayerList(game.ref);
 			if (savedPlayer) {
 				name = savedPlayer.name;
-				const existingPlayer = $game.players.find((p) => p.id === savedPlayer.id);
-				if (existingPlayer) {
+				const existingPlayer = await getPlayer(game?.ref, savedPlayer.id);
+				if (objectIsEmpty(existingPlayer)) {
 					player = existingPlayer;
 				} else {
-					player = {
+					const playerInfo = {
 						...savedPlayer,
 						score: initialScore,
-						state: $game.players.length ? 'waiting' : 'ready'
+						state: $game.players.length ? 'joined' : 'ready'
 					};
-					addPlayer(game.ref, player);
+					player = await addPlayerToGame(game.ref, playerInfo);
 				}
 			} else {
 				name = 'Player ' + ($game.players.length + 1);
-				player = {
+				const playerInfo = {
 					id: generateGuid(),
 					name,
 					score: initialScore,
-					state: $game.players.length ? 'waiting' : 'ready'
+					state: $game.players.length ? 'joined' : 'ready'
 				};
-				addPlayer(game.ref, player);
+				player = await addPlayerToGame(game.ref, playerInfo);
 			}
 		}
 	});
 
 	beforeNavigate((navigation) => {
-		const continuingToGame = navigation.to?.route.id === '/game/[code]';
+		const continuingToGame = navigation.to?.route.id === '/game/[game]';
 		if (!continuingToGame) {
 			leavingGame = true;
 		}
@@ -69,32 +82,36 @@
 
 	onDestroy(() => {
 		if (leavingGame && game && player) {
-			removePlayer(game?.ref, player);
+			removePlayer(player.ref);
 			// empty player store as well
 		}
 	});
 
 	function handleChangeName() {
-		if (player) {
-			player.name = name;
-			saveToLocal('player', { id: player.id, name: player.name });
-			if (game) {
-				updatePlayer(game?.ref, player);
+		if ($player) {
+			$player.name = name;
+			saveToLocal('player', { id: $player.id, name: $player.name });
+			if (player) {
+				updatePlayer(player.ref, $player);
 			}
 		}
 	}
 
 	function handleToggleReady({ detail: state }: CustomEvent<boolean>) {
-		if (game && player) {
-			updatePlayer(game?.ref, { ...player, state: state ? 'ready' : 'waiting' });
+		if (player) {
+			updatePlayer(player?.ref, { state: state ? 'ready' : 'joined' });
 		}
 	}
 
 	function handleStartGame() {
-		setGameStatus(game?.ref, 'in progress');
+		startGame(game?.ref);
 		goto(`/game/${$game?.id}`);
 	}
 </script>
+
+<svelte:head>
+	<title>Qwixx Clone | {data.gameCode} Lobby</title>
+</svelte:head>
 
 <h2>Game Code: {data.gameCode}</h2>
 
@@ -108,10 +125,10 @@
 	{/each}
 </ul>
 
-{#if playerIndex === 0}
+<!-- {#if joinOrder === 0}
 	<DefaultButton disabled={!readyToStart} on:click={() => handleStartGame()}
 		>Start Game</DefaultButton
 	>
 {:else if playerIndex && playerIndex > 0}
 	<ToggleButton on:toggle={handleToggleReady}>Ready</ToggleButton>
-{/if}
+{/if} -->

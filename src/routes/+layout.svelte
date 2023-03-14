@@ -7,10 +7,6 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Qwixx Clone</title>
-</svelte:head>
-
 <h1 class="title">Qwixx Clone!</h1>
 <slot />
 

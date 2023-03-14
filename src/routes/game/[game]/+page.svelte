@@ -4,40 +4,71 @@
 	import ScoreRow from './score-row.svelte';
 	import DefaultButton from '$lib/components/default-button.svelte';
 	import {
-		dice,
-		turn,
 		calculateFinalScore,
 		score,
 		type GameStore,
 		getGameStore,
-		joinGame
+		joinGame,
+		turn
 	} from '$lib/stores/index';
 	import { createArray, getFromLocal } from '$lib/utils/base';
 	import { beforeUpdate, onMount } from 'svelte';
 	import type { PageData } from './$types';
-	import type { Player, SavedPlayer } from '$lib/types';
+	import type { Player, SavedPlayer, Die as DieData } from '$lib/types';
 	import { goto } from '$app/navigation';
+	import fb from '$lib/utils/firebase';
+	import { updatePlayerScore } from '$lib/utils/game';
+	import ToggleButton from '$lib/components/toggle-button.svelte';
 
-	let game: GameStore | null = getGameStore();
-	let player: Player | null;
 	export let data: PageData;
+	let game: GameStore | null = getGameStore();
+	let playerIndex: number = -1;
+	let player: Player | null;
+	$: if ($game && playerIndex > -1) {
+		player = $game?.players[playerIndex];
+	}
+
+	let dice: DieData[] = [];
+	$: if ($game?.diceRoll) {
+		dice = $game.diceRoll;
+	}
+
+	let scoreUpdated = false;
+	$: {
+		console.log('score updated?', scoreUpdated);
+	}
+	$: if ($game?.status === 'turn started') {
+		scoreUpdated = false;
+	}
+	$: if ($game?.status === 'turn ended' && !scoreUpdated) {
+		console.log('turn ended');
+		if (player) {
+			const newScore = updatePlayerScore(player.score, {
+				whiteValue: $turn.selectedWhiteValue,
+				colorValue: $turn.selectedColorValue
+			});
+			fb.saveScore(game?.ref, playerIndex, newScore);
+			scoreUpdated = true;
+		}
+	}
 
 	onMount(async () => {
 		if (!game) {
 			game ??= await joinGame(data.gameCode);
+		}
+
+		if ($game) {
 			const savedPlayer = getFromLocal<SavedPlayer>('player');
 			if (savedPlayer) {
-				const playerInGame = !!$game?.players.find((player) => player.id === savedPlayer.id);
-				if (!playerInGame) {
+				playerIndex = $game.players.findIndex((player) => player.id === savedPlayer.id);
+				if (playerIndex === -1) {
 					goto('/');
+				} else {
+					player = player = $game?.players[playerIndex];
 				}
 			}
 		}
 	});
-	function handleActionClick() {
-		// check for adding scores
-		$turn.isMyTurn ? turn.endTurn() : turn.startTurn();
-	}
 
 	$: availableColors = $score.scoreRows.filter((row) => !row.locked).map((row) => row.color);
 
@@ -46,12 +77,37 @@
 			game?.endGame();
 		}
 	});
+
+	async function handleRollDice() {
+		await fb.rollDice(game?.ref);
+		turn.startTurn();
+	}
+
+	async function handleEndTurn() {
+		if (player) {
+			await fb.endTurn(game?.ref, playerIndex);
+			turn.endTurn();
+		}
+	}
+
+	async function handleReady() {
+		if (player) {
+			await fb.updatePlayer(game?.ref, {
+				...player,
+				state: player.state === 'ready' ? 'joined' : 'ready'
+			});
+		}
+	}
 </script>
+
+<svelte:head>
+	<title>Qwixx Clone | {data.gameCode} Game</title>
+</svelte:head>
 
 {#if game}
 	<main class="game-wrapper">
 		<div class="dice-tray">
-			{#each $dice as die}
+			{#each dice as die}
 				{#if die.color === 'white' || availableColors.includes(die.color)}
 					<Die {...die} />
 				{/if}
@@ -59,24 +115,43 @@
 		</div>
 		<div class="actions">
 			<div class="buttons">
-				<DefaultButton on:click={handleActionClick}>
-					{#if $turn.isMyTurn}
-						End Turn
-					{:else}
-						Roll Dice
-					{/if}
-				</DefaultButton>
+				<!-- 
+					If current turn and dice not rolled,
+						show "Roll Dice"
+					If current turn and dice rolled,
+						show "End Turn"
+					If not current turn and dice aren't rolled,
+						show disabled button (text?)
+					If not current turn and dice have been rolled,
+						show "Save Selection" (with some kind of success indicator)
+				-->
+				{#if player?.state === 'current turn' && !$game?.diceRolled}
+					<DefaultButton on:click={handleRollDice}>Roll Dice</DefaultButton>
+				{:else if player?.state === 'current turn' && $game?.diceRolled}
+					<DefaultButton
+						on:click={handleEndTurn}
+						disabled={!$game.players.every(
+							(p) => p.state === 'ready' || p.state === 'current turn'
+						)}>End Turn</DefaultButton
+					>
+				{:else if (player?.state === 'ready' || player?.state === 'joined') && $game?.diceRolled}
+					<ToggleButton on:toggle={handleReady}>Ready</ToggleButton>
+				{:else}
+					<DefaultButton disabled>Default Text Here</DefaultButton>
+				{/if}
 			</div>
 			{#if $game?.status === 'ended'}
 				<h4>Game Over!</h4>
 				<h5>Final Score: {calculateFinalScore($score)}</h5>
+			{:else}
+				{player?.state}
 			{/if}
 			<div class="empty-rolls">
 				<h5>Turns Passed</h5>
 				<div class="empty-roll-marker__wrapper">
 					{#each createArray(4) as box, i}
 						<div class="empty-roll-marker">
-							{#if $score.passedTurns >= i + 1}
+							{#if player && player.score.passedTurns >= i + 1}
 								<FontAwesomeIcon icon={['fas', 'x']} />
 							{/if}
 						</div>
@@ -86,10 +161,10 @@
 		</div>
 		<div class="scorecard">
 			<div class="lock-boxes"><h5>At least 5 X's</h5></div>
-			<ScoreRow color="red" ascOrder={true} />
-			<ScoreRow color="yellow" ascOrder={true} />
-			<ScoreRow color="green" ascOrder={false} />
-			<ScoreRow color="blue" ascOrder={false} />
+			<ScoreRow color="red" ascOrder={true} {game} {player} />
+			<ScoreRow color="yellow" ascOrder={true} {game} {player} />
+			<ScoreRow color="green" ascOrder={false} {game} {player} />
+			<ScoreRow color="blue" ascOrder={false} {game} {player} />
 		</div>
 	</main>
 {/if}

@@ -22,11 +22,14 @@
 					}
 					break;
 			}
-			console.log({ game: $game });
 			$game && goto(`/lobby/${$game.id}`);
 		};
 	}
 </script>
+
+<svelte:head>
+	<title>Qwixx Clone</title>
+</svelte:head>
 
 <main class="entry-wrapper">
 	<DefaultButton on:click={handleClick('create')}>Create Game</DefaultButton>

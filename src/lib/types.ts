@@ -6,7 +6,7 @@ export type Die = {
 	value: DieValue;
 	color: Color | 'white';
 	pipColor: 'white' | 'black';
-	locked: boolean;
+	// locked: boolean;
 };
 
 export type ScoreRow = {
@@ -26,16 +26,19 @@ export type Player = {
 	id: string;
 	name: string;
 	score: Score;
-	state: 'waiting' | 'ready' | 'current turn';
+	state: 'joined' | 'ready' | 'current turn';
+	joinOrder: number;
+	turnOrder: number;
 };
 
 export type SavedPlayer = Pick<Player, 'id' | 'name'>;
 
-export type GameStatus = 'waiting' | 'in progress' | 'ended';
+export type GameStatus = 'starting' | 'turn started' | 'turn ended' | 'ended';
 
 export type GameState = {
 	id: string;
 	status: GameStatus;
 	players: Array<Player>;
-	diceRoll: Array<Pick<Die, 'value' | 'color'>>;
+	diceRolled: boolean;
+	diceRoll: Array<Die>;
 };

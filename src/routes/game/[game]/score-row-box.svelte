@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { BoxSelection, Color } from '$lib/types';
+	import type { BoxSelection, Color, ScoreRow } from '$lib/types';
 	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
-	import { turn, score } from '$lib/stores/index';
+	import { turn } from '$lib/stores/index';
 
+	export let currentScore: ScoreRow;
 	export let color: Color;
 	export let value: number;
 	export let isAvailable: boolean = false;
@@ -13,7 +14,6 @@
 
 	let hover: boolean = false;
 
-	$: currentScore = $score.scoreRows.find((row) => row.color === color)!;
 	$: isScored = currentScore.selectedNumbers.includes(value);
 	$: showHighlight = hover && (isAvailable || isSelected) && (validColorOption || validWhiteOption);
 

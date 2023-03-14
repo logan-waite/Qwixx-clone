@@ -1,6 +1,5 @@
-import { json } from '@sveltejs/kit';
-
 export function randomNumber(min: number, max: number) {
+	// random number between min and max, inclusive
 	min = Math.ceil(min);
 	max = Math.floor(max);
 	return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -128,4 +127,8 @@ export function getFromLocal<T>(key: string): T {
 		console.error('Unable to get value from local storage');
 	}
 	return value ? JSON.parse(value) : null;
+}
+
+export function objectIsEmpty(obj: object) {
+	return Object.keys(obj).length === 0;
 }
